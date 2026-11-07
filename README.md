@@ -54,7 +54,7 @@ background.js ──> pages                     Claude edits features/ only
 ```
 
 - Features live outside the extension package. The host reads them and sends them to the extension, which registers them as user scripts. So a new feature needs only a tab reload, and the chat stays open.
-- Claude in the chat can read this project, and it can write only `.js` and `.css` files in `features/`. It has no shell and no web access, because page text can contain prompt injection.
+- Claude in the chat can read this project, and it can write only `.js` and `.css` files in `features/`. It can open `http` and `https` pages in your Chrome when you ask, for example "go to github". It has no shell, and it cannot fetch web pages itself.
 - To change the chat itself, the host, or the tools, use Claude Code in Terminal in this folder. See `CLAUDE.md`.
 
 ## Files

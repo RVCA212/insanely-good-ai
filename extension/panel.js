@@ -324,12 +324,34 @@ async function applyAndCheck({ tabId, features: list }) {
   return { url: tab.url, registerErrors: applied.errors, logs, screenshot: shot.data, note: notes.filter(Boolean).join(' ') }
 }
 
-// Checks run one at a time: each one reloads a tab and takes a screenshot, and two chats can check at once.
+// Checks and opens run one at a time: each one loads a tab and takes a screenshot, and two chats can act at once.
 let checks = Promise.resolve()
-function applyAndCheckInOrder(args) {
-  const run = checks.then(() => applyAndCheck(args))
+function oneAtATime(fn) {
+  const run = checks.then(fn)
   checks = run.catch(() => {})
   return run
+}
+
+/** Opens `url` in a new tab, or in tab `tabId`, and waits until it loads (at most 15 s). Returns the tab id. */
+async function openAndWait(url, tabId, timeoutMs = 15000) {
+  const loaded = new Set() // a new tab can load before its id is known
+  const listener = (id, info) => info.status === 'complete' && loaded.add(id)
+  chrome.tabs.onUpdated.addListener(listener)
+  try {
+    const tab = tabId === null ? await chrome.tabs.create({ url }) : await chrome.tabs.update(tabId, { url, active: true })
+    for (let waited = 0; !loaded.has(tab.id) && waited < timeoutMs; waited += 100) await sleep(100)
+    return tab.id
+  } finally {
+    chrome.tabs.onUpdated.removeListener(listener)
+  }
+}
+
+async function openUrl({ chatId, url, tabId }) {
+  const id = await openAndWait(url, tabId)
+  const run = running.get(chatId)
+  if (run) run.tabId = id // the tab to reload when the turn ends
+  await sleep(1500) // time for the page and its features to render
+  return tabContext(await chrome.tabs.get(id))
 }
 
 async function inspect({ tabId, selector, limit, properties }) {
@@ -341,7 +363,8 @@ async function inspect({ tabId, selector, limit, properties }) {
 async function answer({ requestId, action, args }) {
   try {
     let result
-    if (action === 'applyAndCheck') result = await applyAndCheckInOrder(args)
+    if (action === 'applyAndCheck') result = await oneAtATime(() => applyAndCheck(args))
+    else if (action === 'openUrl') result = await oneAtATime(() => openUrl(args))
     else if (action === 'inspect') result = await inspect(args)
     else throw new Error(`Unknown request: ${action}`)
     port?.postMessage({ type: 'response', requestId, result })
@@ -436,7 +459,11 @@ function connect() {
 
 async function captureContext() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-  if (!tab) return null
+  return tab ? tabContext(tab) : null
+}
+
+/** What Claude gets about a tab: URL, title, DOM outline, page info, screenshot, feature logs. */
+async function tabContext(tab) {
   const context = { tabId: tab.id, url: tab.url ?? '(a Chrome page)', title: tab.title ?? '' }
   if (!canChange(tab.url)) {
     context.unavailable = 'Chrome does not let extensions read or change this page.'

@@ -35,3 +35,12 @@ export function decideTool(name, input, root, taken = new Set()) {
   }
   return { behavior: 'deny', message: `${name} is not available in this chat.` }
 }
+
+/** The URL that open_url opens: a full http or https URL, so no javascript:, file: or chrome: pages. */
+export function checkUrl(url) {
+  const parsed = URL.canParse(url) ? new URL(url) : null
+  if (!parsed || !['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`open_url needs a full http or https URL, such as https://example.com/. Got: ${url}`)
+  }
+  return parsed.href
+}

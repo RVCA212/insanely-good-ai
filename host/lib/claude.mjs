@@ -57,6 +57,8 @@ export function describeTool(name, input = {}) {
       return 'Reloading the page to check the result'
     case 'mcp__browser__inspect_page':
       return `Inspecting ${input.selector ?? 'the page'}`
+    case 'mcp__browser__open_url':
+      return `Opening ${input.url ?? 'a page'}`
     default:
       return name
   }

@@ -11,7 +11,7 @@ import { buildPrompt, formatLogs, saveContext } from './lib/context.mjs'
 import { loadFeatures } from './lib/features.mjs'
 import { createDecoder, encode } from './lib/framing.mjs'
 import { commitFeatures, deleteFiles, ensureRepo, undoLast } from './lib/git.mjs'
-import { decideTool, WRITE_TOOLS } from './lib/permissions.mjs'
+import { checkUrl, decideTool, WRITE_TOOLS } from './lib/permissions.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')
@@ -58,7 +58,7 @@ function request(action, args, timeoutMs = 45000) {
 }
 
 const claudePath = findClaude()
-// Chats can work at the same time. One turn per chat: chat id -> { ctrl, tabId, dir, files }.
+// Chats can work at the same time. One turn per chat: chat id -> { chatId, ctrl, tabId, dir, files }.
 // `dir`: the snapshot folder (from ROOT). `files`: absolute paths that the turn wrote.
 const turns = new Map()
 let lastApplied = null // JSON of the features that the tab has now
@@ -91,6 +91,19 @@ async function inspectPage(turn, { selector, limit = 10, properties }) {
   if (!turn.tabId) return noTab()
   const result = await request('inspect', { tabId: turn.tabId, selector, limit, properties })
   return text(JSON.stringify(result, null, 1))
+}
+
+/** Opens the URL, and the opened tab becomes the tab of the turn, with a new snapshot. */
+async function openUrl(turn, { url, newTab = true }) {
+  const context = await request('openUrl', { chatId: turn.chatId, url: checkUrl(url), tabId: newTab ? null : turn.tabId })
+  turn.tabId = context.tabId
+  const files = await saveContext(ROOT, turn.dir, context)
+  const lines = [`Opened ${JSON.stringify(context.title)} ${context.url}. inspect_page and apply_and_check now use this tab.`]
+  if (context.unavailable) lines.push(context.unavailable)
+  if (files.length) lines.push('New snapshot of the tab (read the files when you need them):', ...files.map((f) => `- ${f}`))
+  const content = [{ type: 'text', text: lines.join('\n') }]
+  if (context.screenshot) content.push({ type: 'image', data: context.screenshot.split(',')[1], mimeType: 'image/jpeg' })
+  return { content }
 }
 
 /** Tool errors go back to Claude as text, so it can react. */
@@ -128,6 +141,16 @@ const browserServer = (turn) => createSdkMcpServer({
       },
       safe((args) => inspectPage(turn, args)),
       { alwaysLoad: true }
+    ),
+    tool(
+      'open_url',
+      "Open a URL in the user's Chrome and show it to the user. Waits for the page to load, then returns a screenshot and a new snapshot of the page. After this, inspect_page and apply_and_check use the opened tab.",
+      {
+        url: z.string().describe('Full http or https URL, for example https://github.com/'),
+        newTab: z.boolean().optional().describe('Open a new tab. Default true. Use false to load the URL in the tab of this chat.')
+      },
+      safe((args) => openUrl(turn, args)),
+      { alwaysLoad: true }
     )
   ]
 })
@@ -155,7 +178,7 @@ async function chat({ chatId, text: userText, sessionId, context }) {
   if (turns.has(chatId)) return emit({ type: 'error', message: 'Claude is still working on the last message in this chat.' })
   const ctrl = new AbortController()
   // The chat id names a folder, so keep only safe characters.
-  const turn = { ctrl, tabId: context?.tabId ?? null, dir: `context/${String(chatId).replace(/[^\w-]/g, '_')}`, files: new Set() }
+  const turn = { chatId, ctrl, tabId: context?.tabId ?? null, dir: `context/${String(chatId).replace(/[^\w-]/g, '_')}`, files: new Set() }
   turns.set(chatId, turn)
   let newSession = sessionId
   try {

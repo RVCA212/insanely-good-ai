@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { decideTool } from '../host/lib/permissions.mjs'
+import { checkUrl, decideTool } from '../host/lib/permissions.mjs'
 
 const root = '/p/insanely-good-ai'
 const verdict = (name, input) => decideTool(name, input, root).behavior
@@ -32,6 +32,16 @@ test('a chat cannot write a file that another chat is writing', () => {
 
 test('browser tools are allowed, everything else is denied', () => {
   assert.equal(verdict('mcp__browser__apply_and_check', {}), 'allow')
+  assert.equal(verdict('mcp__browser__open_url', { url: 'https://x.com' }), 'allow')
   assert.equal(verdict('Bash', { command: 'ls' }), 'deny')
   assert.equal(verdict('WebFetch', { url: 'https://x.com' }), 'deny')
+})
+
+test('open_url opens only full http and https URLs', () => {
+  assert.equal(checkUrl('https://github.com'), 'https://github.com/')
+  assert.equal(checkUrl('http://example.com/a?q=b c'), 'http://example.com/a?q=b%20c')
+  assert.throws(() => checkUrl('github.com'), /full http or https URL/)
+  assert.throws(() => checkUrl('javascript:alert(1)'))
+  assert.throws(() => checkUrl('file:///etc/passwd'))
+  assert.throws(() => checkUrl('chrome://settings'))
 })
