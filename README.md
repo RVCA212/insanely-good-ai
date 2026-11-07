@@ -1,6 +1,20 @@
 # Insanely Good AI
 
-A Chrome extension with a Claude Code chat in the side panel. Ask for a change to the page you are on ("make this page dark mode"), and Claude Code writes a small feature into this project. The extension loads it and reloads the tab.
+A Chrome extension that can change and modify itself by building new features into itself.
+
+It uses Claude Code on your computer to add new features from your query. It can see your screen, and it can do anything a Chrome extension can do.
+
+It is made to be customized to **you**. Ask it to make:
+
+- custom UIs for you on the sites you use
+- automations, like scraping and form fills
+- and much, much more
+
+I made it to be infinitely extensible and customizable.
+
+## Demo
+
+https://github.com/user-attachments/assets/e98de6a3-7bc1-4a61-8794-f862d74b35a8
 
 ## Setup (one time)
 
@@ -43,3 +57,10 @@ background.js ──> pages                     Claude edits features/ only
 - `features/`: the features that the chat writes. It is its own git repo (the host makes it), so your features and their history are not part of this repo.
 - `context/<chat>/`: the snapshot of the tab for each chat (not in git). The host removes them when it starts.
 - `logs/host.log`: the host log (not in git).
+
+## Contributing
+
+I'd love for you to contribute! Some cool new features to build:
+
+1. Add Codex and OpenCode support.
+2. Add browser use support, so the AI can control your browser.
