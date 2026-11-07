@@ -248,12 +248,14 @@ function renderFeatures() {
   )
 }
 
+/** `name`: 'chat', 'features' or 'settings'. */
 function showView(name) {
-  const open = name === 'features'
-  $('chat-view').hidden = open
-  $('features-view').hidden = !open
-  $('features-button').setAttribute('aria-pressed', String(open))
-  if (open) $('feature-search').focus()
+  $('chat-view').hidden = name !== 'chat'
+  $('features-view').hidden = name !== 'features'
+  $('settings-view').hidden = name !== 'settings'
+  $('features-button').setAttribute('aria-pressed', String(name === 'features'))
+  $('settings-button').setAttribute('aria-pressed', String(name === 'settings'))
+  if (name === 'features') $('feature-search').focus()
 }
 
 async function applyFeatures(list) {
@@ -499,7 +501,7 @@ async function send() {
     updateButtons()
     return
   }
-  port.postMessage({ type: 'chat', chatId: chat.id, text, sessionId: chat.sessionId, context })
+  port.postMessage({ type: 'chat', chatId: chat.id, text, sessionId: chat.sessionId, context, devtools: $('devtools').checked })
 }
 
 // ---------- Page functions (Chrome runs these inside the tab, so they use no outside names) ----------
@@ -640,6 +642,8 @@ $('new').addEventListener('click', () => {
 })
 $('history-button').addEventListener('click', () => showPastChats($('history').hidden))
 $('features-button').addEventListener('click', () => showView($('features-view').hidden ? 'features' : 'chat'))
+$('settings-button').addEventListener('click', () => showView($('settings-view').hidden ? 'settings' : 'chat'))
+$('devtools').addEventListener('change', () => chrome.storage.local.set({ devtools: $('devtools').checked }))
 $('feature-search').addEventListener('input', () => renderFeatures())
 document.addEventListener('click', (event) => {
   if (!$('history').hidden && !event.target.closest('#history, #history-button')) showPastChats(false)
@@ -655,7 +659,7 @@ chrome.tabs.onUpdated.addListener((_id, info) => {
   if (info.url || info.status === 'complete') showTarget()
 })
 
-const stored = await chrome.storage.local.get(['chatId', 'transcript', 'sessionId', 'updatedAt', 'pastChats', 'disabled', 'features'])
+const stored = await chrome.storage.local.get(['chatId', 'transcript', 'sessionId', 'updatedAt', 'pastChats', 'disabled', 'features', 'devtools'])
 current = {
   id: stored.chatId ?? crypto.randomUUID(),
   sessionId: stored.sessionId ?? null,
@@ -666,6 +670,7 @@ current = {
 pastChats = (stored.pastChats ?? []).map((chat) => ({ id: chat.sessionId, ...chat }))
 disabled = stored.disabled ?? []
 features = stored.features ?? []
+$('devtools').checked = stored.devtools ?? false // off for new users
 for (const entry of current.transcript) render(entry)
 showEmpty()
 renderFeatures()

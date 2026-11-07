@@ -1,10 +1,26 @@
 import { execFile } from 'node:child_process'
 import { accessSync, constants } from 'node:fs'
+import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { basename, delimiter, join } from 'node:path'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 
 const TOOLS = ['Read', 'Glob', 'Grep', 'Write', 'Edit']
+const DEVTOOLS_MCP = createRequire(import.meta.url).resolve('chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js')
+
+/**
+ * Chrome DevTools MCP, attached to the user's running Chrome (remote debugging must be on in
+ * chrome://inspect/#remote-debugging). It connects at the first tool call. Nothing goes to Google.
+ */
+function devtoolsServer(root) {
+  return {
+    type: 'stdio',
+    command: process.execPath,
+    args: [DEVTOOLS_MCP, '--autoConnect', '--no-usage-statistics', '--no-performance-crux', `--filesystemRoot=${join(root, 'context')}`],
+    env: { CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS: '1' },
+    alwaysLoad: true
+  }
+}
 
 /** The user's own `claude`. Chrome starts the host with a short PATH, so also look in the usual install folders. */
 export function findClaude(path = process.env.PATH ?? '') {
@@ -60,12 +76,15 @@ export function describeTool(name, input = {}) {
     case 'mcp__browser__open_url':
       return `Opening ${input.url ?? 'a page'}`
     default:
-      return name
+      return name.startsWith('mcp__chrome-devtools__') ? `DevTools: ${name.slice(22).replaceAll('_', ' ')}` : name
   }
 }
 
-/** Runs one turn. Returns the session id to resume next time. */
-export async function runTurn({ claudePath, root, prompt, resume, instructions, browserServer, canUseTool, signal, emit }) {
+/**
+ * Runs one turn. Returns the session id to resume next time.
+ * `devtools`: the user turned on Chrome DevTools in the panel settings (off by default).
+ */
+export async function runTurn({ claudePath, root, prompt, resume, instructions, browserServer, devtools, canUseTool, signal, emit }) {
   const abortController = new AbortController()
   signal.addEventListener('abort', () => abortController.abort(), { once: true })
   let sessionId = resume
@@ -78,7 +97,7 @@ export async function runTurn({ claudePath, root, prompt, resume, instructions, 
       // Isolation: none of the user's ~/.claude settings, CLAUDE.md, skills, plugins or MCP servers.
       settingSources: [],
       strictMcpConfig: true,
-      mcpServers: { browser: browserServer },
+      mcpServers: devtools ? { browser: browserServer, 'chrome-devtools': devtoolsServer(root) } : { browser: browserServer },
       settings: { autoMemoryEnabled: false },
       systemPrompt: { type: 'preset', preset: 'claude_code', append: instructions },
       tools: TOOLS,

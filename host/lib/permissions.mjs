@@ -12,11 +12,19 @@ export function isInside(dir, target) {
  * The chat's tool policy. Page text can carry prompt injection, and features run on
  * all of the user's sites, so Claude reads only this project and writes only
  * .js and .css files in features/. No shell, no web.
+ * The chrome-devtools tools act on all of the user's tabs. They can save to and upload
+ * local files, so their file paths (any `...Path` or `...Paths` input) must be in context/.
  * `taken`: absolute paths that other chats are writing now. Two chats must not write one file.
  */
 export function decideTool(name, input, root, taken = new Set()) {
   const allow = { behavior: 'allow', updatedInput: input }
   if (name.startsWith('mcp__browser__')) return allow
+  if (name.startsWith('mcp__chrome-devtools__')) {
+    const context = join(root, 'context')
+    const paths = Object.entries(input).filter(([key]) => /Paths?$/.test(key)).flatMap(([, value]) => value)
+    if (paths.every((path) => isInside(context, resolve(root, String(path))))) return allow
+    return { behavior: 'deny', message: `${name} can only use files in ${context}.` }
+  }
   const target = input.file_path ?? input.path
   if (READ_TOOLS.has(name)) {
     if (target === undefined || isInside(root, resolve(root, String(target)))) return allow

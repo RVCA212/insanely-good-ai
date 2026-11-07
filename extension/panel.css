@@ -93,6 +93,10 @@ header {
   font-weight: 600;
 }
 
+#settings-button[aria-pressed='true'] {
+  background: var(--user);
+}
+
 .actions {
   display: flex;
   gap: 6px;
@@ -300,6 +304,30 @@ button.icon {
 .feature-error {
   color: var(--error);
   font-size: 11px;
+}
+
+.setting {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.setting input {
+  margin-top: 3px;
+}
+
+.setting-name {
+  display: block;
+  font-weight: 550;
+}
+
+.setting-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
 }
 
 #log {

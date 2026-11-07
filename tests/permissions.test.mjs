@@ -37,6 +37,17 @@ test('browser tools are allowed, everything else is denied', () => {
   assert.equal(verdict('WebFetch', { url: 'https://x.com' }), 'deny')
 })
 
+test('chrome-devtools tools are allowed, but use files only in context/', () => {
+  assert.equal(verdict('mcp__chrome-devtools__list_pages', {}), 'allow')
+  assert.equal(verdict('mcp__chrome-devtools__evaluate_script', { function: '() => 1', pageId: 1 }), 'allow')
+  assert.equal(verdict('mcp__chrome-devtools__take_snapshot', { pageId: 1, filePath: 'context/chat-1/a11y.txt' }), 'allow')
+  assert.equal(verdict('mcp__chrome-devtools__upload_file', { pageId: 1, uid: '1', filePaths: [`${root}/context/chat-1/a.txt`] }), 'allow')
+  assert.equal(verdict('mcp__chrome-devtools__evaluate_script', { function: '() => "x"', pageId: 1, filePath: `${root}/host/host.mjs` }), 'deny')
+  assert.equal(verdict('mcp__chrome-devtools__take_screenshot', { pageId: 1, filePath: 'context/../extension/icon.png' }), 'deny')
+  assert.equal(verdict('mcp__chrome-devtools__upload_file', { pageId: 1, uid: '1', filePaths: ['context/a.txt', '/Users/me/.ssh/id_rsa'] }), 'deny')
+  assert.equal(verdict('mcp__chrome-devtools__lighthouse_audit', { pageId: 1, outputDirPath: '/tmp' }), 'deny')
+})
+
 test('open_url opens only full http and https URLs', () => {
   assert.equal(checkUrl('https://github.com'), 'https://github.com/')
   assert.equal(checkUrl('http://example.com/a?q=b c'), 'http://example.com/a?q=b%20c')

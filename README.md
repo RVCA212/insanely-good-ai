@@ -23,6 +23,7 @@ https://github.com/user-attachments/assets/e98de6a3-7bc1-4a61-8794-f862d74b35a8
 3. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and select the `extension/` folder.
 4. On the extension's **Details** page, turn on **Allow User Scripts**. (The panel shows a button for this when it is off.)
 5. Pin the extension. Click its icon to open the chat.
+6. Optional: to give the chat the [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) tools (console, network, page JS, clicks, performance), click the gear button in the panel and turn on **Chrome DevTools**. It is off by default. Then open `chrome://inspect/#remote-debugging` and turn on remote debugging. The tools can act on all of your tabs. Chrome 144 or later. Chrome asks you to allow each new connection.
 
 Claude Code must be installed and signed in (`claude auth status`). The chat uses your own login and plan.
 

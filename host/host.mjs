@@ -19,6 +19,9 @@ const FEATURES = join(ROOT, 'features')
 const CONTEXT = join(ROOT, 'context')
 const LOG_FILE = join(ROOT, 'logs', 'host.log')
 const INSTRUCTIONS = readFileSync(join(HERE, 'instructions.md'), 'utf8')
+// The Chrome DevTools tools are a setting in the panel, off by default.
+const DEVTOOLS_ON = `${INSTRUCTIONS}\n${readFileSync(join(HERE, 'devtools.md'), 'utf8')}`
+const DEVTOOLS_OFF = `${INSTRUCTIONS}\n## Chrome DevTools\n\nThe Chrome DevTools tools are off. When a request needs them (console errors, network requests, page JS, clicks, performance), tell the user to turn on "Chrome DevTools" in the settings of the panel.\n`
 const MAX_MESSAGE = 1024 * 1024 // Chrome's limit for one message from the host
 
 mkdirSync(dirname(LOG_FILE), { recursive: true })
@@ -172,7 +175,7 @@ function takenBy(turn) {
   return new Set([...turns.values()].filter((other) => other !== turn).flatMap((other) => [...other.files]))
 }
 
-async function chat({ chatId, text: userText, sessionId, context }) {
+async function chat({ chatId, text: userText, sessionId, context, devtools = false }) {
   // Messages about this turn carry the chat id, so the panel can show them in the right chat.
   const emit = (message) => send({ ...message, chatId })
   if (turns.has(chatId)) return emit({ type: 'error', message: 'Claude is still working on the last message in this chat.' })
@@ -194,8 +197,9 @@ async function chat({ chatId, text: userText, sessionId, context }) {
       root: ROOT,
       prompt,
       resume: sessionId || undefined,
-      instructions: INSTRUCTIONS,
+      instructions: devtools ? DEVTOOLS_ON : DEVTOOLS_OFF,
       browserServer: browserServer(turn),
+      devtools,
       canUseTool: async (name, input) => {
         const decision = decideTool(name, input, ROOT, takenBy(turn))
         if (decision.behavior === 'allow' && WRITE_TOOLS.has(name)) turn.files.add(resolve(ROOT, String(input.file_path)))
