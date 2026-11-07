@@ -36,6 +36,13 @@ It runs on macOS (`install.sh` registers the host for Chrome on macOS). It needs
 - **Undo** reverts the last change from the chat or the last delete (each message and each delete is one git commit of `features/`).
 - **New chat** starts a new Claude Code session. It works while Claude is still busy: the old chat continues in the background, in **Past chats**. Two chats cannot write the same feature file at the same time. Undo and delete wait until all chats are done.
 
+## Cool examples
+
+Type these into the chat:
+
+- "Add a new copy button to the bottom of ChatGPT responses to allow me to copy structured markdown of the entire conversation, not just the last message."
+- "Make a new feature for a dark mode theme that works on any website I visit."
+
 ## How it works
 
 ```
