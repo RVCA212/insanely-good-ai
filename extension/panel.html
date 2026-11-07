@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Insanely Good AI</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <header>
+      <div class="title">
+        <span id="dot" class="dot" title="Not connected"></span>
+        <button id="features-button" type="button" title="Show or hide features" aria-pressed="false" aria-controls="features-view">Features <span id="feature-count" class="count"></span></button>
+      </div>
+      <div class="actions">
+        <button id="history-button" type="button" class="icon" title="Past chats" aria-label="Past chats" aria-haspopup="true" aria-expanded="false" aria-controls="history">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+            <path d="M12 7v5l4 2" />
+          </svg>
+        </button>
+        <button id="undo" type="button" class="icon" title="Undo the last change to features (by Claude, or a delete)" aria-label="Undo the last change to features">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 14 4 9l5-5" />
+            <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+          </svg>
+        </button>
+        <button id="new" type="button" class="icon" title="Start a new chat" aria-label="Start a new chat">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <path d="M12 7v6" />
+            <path d="M9 10h6" />
+          </svg>
+        </button>
+      </div>
+      <div id="history" class="history" hidden></div>
+    </header>
+    <div id="banners"></div>
+    <div id="chat-view" class="view">
+      <main id="log"></main>
+      <form id="form">
+        <div id="target" class="target"></div>
+        <textarea id="input" rows="3" placeholder="Make this page dark mode"></textarea>
+        <div class="row">
+          <span class="hint">Enter to send. Shift+Enter for a new line.</span>
+          <button id="send" type="submit" class="primary">Send</button>
+        </div>
+      </form>
+    </div>
+    <section id="features-view" class="view" hidden>
+      <input id="feature-search" type="search" placeholder="Search features" aria-label="Search features" autocomplete="off" spellcheck="false" />
+      <ul id="feature-list"></ul>
+    </section>
+    <script src="panel.js" type="module"></script>
+  </body>
+</html>

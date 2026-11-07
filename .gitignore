@@ -1,0 +1,6 @@
+node_modules/
+context/
+logs/
+host/host.sh
+.DS_Store
+features/

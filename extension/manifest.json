@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Insanely Good AI",
+  "version": "0.1.0",
+  "description": "Chat with Claude Code to change any website.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsLrmLjMV+bUwdosQVD4cabRFcMTVfevC4QARm6N0iWUIBPQu2GFeARQrfEVvyn9blmKXbM31LekyZruXlfs0mZVoEIq4xWIk8I9QiFTw+uhruCrj2Q3ZoDppy0V6/aLefT9RyA7kLgOhHyXWVvPyQBx0UVNjKESBEz6asFDzUx068PjFSuqx/F09l4kr0m95NuhkYX1YOXNTKexdIjaCfRX3mOiyAAuJM+y3QedwTQ/jQODwOGqAbupeI8sYMEUAEfWQ459rlnp1O67ZmRFv1SKqMkYC4ETpeLRlk6ip8zwhJ0wOTu4E5no5VIu/0WkBtWy7PC4Y3bkauIu1YqrQrwIDAQAB",
+  "minimum_chrome_version": "138",
+  "permissions": ["nativeMessaging", "sidePanel", "userScripts", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Insanely Good AI" },
+  "side_panel": { "default_path": "panel.html" }
+}
