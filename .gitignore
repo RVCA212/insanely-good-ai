@@ -4,3 +4,4 @@ logs/
 host/host.sh
 .DS_Store
 features/
+bu-test/

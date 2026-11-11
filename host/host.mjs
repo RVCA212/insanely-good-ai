@@ -12,6 +12,7 @@ import { loadFeatures } from './lib/features.mjs'
 import { createDecoder, encode } from './lib/framing.mjs'
 import { commitFeatures, deleteFiles, ensureRepo, undoLast } from './lib/git.mjs'
 import { checkUrl, decideTool, WRITE_TOOLS } from './lib/permissions.mjs'
+import { formatResult, wrapCode } from './lib/runjs.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')
@@ -96,12 +97,18 @@ async function inspectPage(turn, { selector, limit = 10, properties }) {
   return text(JSON.stringify(result, null, 1))
 }
 
+async function runJs(turn, { code }) {
+  if (!turn.tabId) return noTab()
+  const result = await request('runJs', { tabId: turn.tabId, code: wrapCode(code) })
+  return text(formatResult(result))
+}
+
 /** Opens the URL, and the opened tab becomes the tab of the turn, with a new snapshot. */
 async function openUrl(turn, { url, newTab = true }) {
   const context = await request('openUrl', { chatId: turn.chatId, url: checkUrl(url), tabId: newTab ? null : turn.tabId })
   turn.tabId = context.tabId
   const files = await saveContext(ROOT, turn.dir, context)
-  const lines = [`Opened ${JSON.stringify(context.title)} ${context.url}. inspect_page and apply_and_check now use this tab.`]
+  const lines = [`Opened ${JSON.stringify(context.title)} ${context.url}. inspect_page, run_js and apply_and_check now use this tab.`]
   if (context.unavailable) lines.push(context.unavailable)
   if (files.length) lines.push('New snapshot of the tab (read the files when you need them):', ...files.map((f) => `- ${f}`))
   const content = [{ type: 'text', text: lines.join('\n') }]
@@ -146,8 +153,17 @@ const browserServer = (turn) => createSdkMcpServer({
       { alwaysLoad: true }
     ),
     tool(
+      'run_js',
+      "Run JavaScript in the user's live tab and return the result as JSON. The code is the body of an async function: use `return` to give back a value, and `await` works. It runs in the same world as JS features: full DOM access, but not the page's JS variables. Use it freely: to test selectors, read text and state, click or type to try a feature, or fetch data from the site. Return plain data, not elements (an element comes back as {}). A change that it makes is gone after a reload: a lasting change is a feature.",
+      {
+        code: z.string().describe('Body of an async function, for example: return [...document.querySelectorAll("nav a")].map((a) => a.href)')
+      },
+      safe((args) => runJs(turn, args)),
+      { alwaysLoad: true }
+    ),
+    tool(
       'open_url',
-      "Open a URL in the user's Chrome and show it to the user. Waits for the page to load, then returns a screenshot and a new snapshot of the page. After this, inspect_page and apply_and_check use the opened tab.",
+      "Open a URL in the user's Chrome and show it to the user. Waits for the page to load, then returns a screenshot and a new snapshot of the page. After this, inspect_page, run_js and apply_and_check use the opened tab.",
       {
         url: z.string().describe('Full http or https URL, for example https://github.com/'),
         newTab: z.boolean().optional().describe('Open a new tab. Default true. Use false to load the URL in the tab of this chat.')

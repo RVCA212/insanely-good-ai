@@ -71,6 +71,14 @@ const handlers = {
     for (let i = logs.length - 1; i >= 0; i--) if (logs[i].tabId === tabId) logs.splice(i, 1)
     await chrome.storage.session.set({ logs })
     return {}
+  },
+  // Runs the host's run_js script in the top frame of the tab, in the same world as the features.
+  runJs: async ({ tabId, code }) => {
+    if (!userScriptsOn()) throw new Error('run_js cannot run: the user must turn on "Allow User Scripts" for the extension.')
+    const [injection] = await chrome.userScripts.execute({ target: { tabId }, js: [{ code }] })
+    const error = injection?.error ?? injection?.result?.error
+    if (error) throw new Error(error.message ?? String(error))
+    return { json: injection?.result?.json }
   }
 }
 

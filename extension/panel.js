@@ -1,5 +1,5 @@
 // The chat. It holds the connection to the native host, sends a snapshot of the tab with each
-// message, and does the host's browser requests (load features, reload, screenshot, inspect).
+// message, and does the host's browser requests (load features, reload, screenshot, inspect, run JS).
 
 import { markdown } from './markdown.js'
 
@@ -368,6 +368,7 @@ async function answer({ requestId, action, args }) {
     if (action === 'applyAndCheck') result = await oneAtATime(() => applyAndCheck(args))
     else if (action === 'openUrl') result = await oneAtATime(() => openUrl(args))
     else if (action === 'inspect') result = await inspect(args)
+    else if (action === 'runJs') result = await bg({ type: 'runJs', ...args })
     else throw new Error(`Unknown request: ${action}`)
     port?.postMessage({ type: 'response', requestId, result })
   } catch (error) {
