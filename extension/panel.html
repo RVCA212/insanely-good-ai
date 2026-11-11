@@ -46,10 +46,11 @@
     <div id="chat-view" class="view">
       <main id="log"></main>
       <form id="form">
+        <ul id="mentions" class="mentions" role="listbox" aria-label="Features" hidden></ul>
         <div id="target" class="target"></div>
-        <textarea id="input" rows="3" placeholder="Make this page dark mode"></textarea>
+        <textarea id="input" rows="3" placeholder="Make this page dark mode" aria-autocomplete="list" aria-controls="mentions"></textarea>
         <div class="row">
-          <span class="hint">Enter to send. Shift+Enter for a new line.</span>
+          <span class="hint">Enter to send. Shift+Enter for a new line. @ to name a feature.</span>
           <button id="send" type="submit" class="primary">Send</button>
         </div>
       </form>

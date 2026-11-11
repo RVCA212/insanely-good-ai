@@ -2,6 +2,7 @@
 // message, and does the host's browser requests (load features, reload, screenshot, inspect, run JS).
 
 import { markdown } from './markdown.js'
+import { findMention, mentionText, searchFeatures } from './mentions.js'
 
 const HOST = 'com.insanely_good_ai.host'
 const $ = (id) => document.getElementById(id)
@@ -279,6 +280,66 @@ function deleteFeature(id) {
   if (running.size) return
   if (!port) connect()
   port?.postMessage({ type: 'delete', id })
+}
+
+// ---------- @ mentions ----------
+
+let mention = null // while the popup shows: { start, items, active }. start: the index of the "@".
+
+/** Shows the features that match the "@word" at the caret, or closes the popup. */
+function updateMention() {
+  const input = $('input')
+  const found = input.selectionStart === input.selectionEnd ? findMention(input.value, input.selectionStart) : null
+  const items = found ? searchFeatures(features, found.query) : []
+  if (!items.length) return closeMention()
+  mention = { start: found.start, items, active: 0 }
+  renderMention()
+}
+
+function renderMention() {
+  $('mentions').replaceChildren(
+    ...mention.items.map((feature, i) => {
+      const item = el('li', 'mention', '')
+      item.id = `mention-${i}`
+      item.setAttribute('role', 'option')
+      item.setAttribute('aria-selected', String(i === mention.active))
+      item.append(el('div', 'mention-name', feature.name), el('div', 'mention-meta', mentionText(feature)))
+      item.addEventListener('pointerdown', (event) => event.preventDefault()) // keep the focus in the chat box
+      item.addEventListener('click', () => pickMention(feature))
+      return item
+    })
+  )
+  $('mentions').hidden = false
+  $('input').setAttribute('aria-activedescendant', `mention-${mention.active}`)
+  $('mentions').children[mention.active].scrollIntoView({ block: 'nearest' })
+}
+
+function closeMention() {
+  mention = null
+  $('mentions').hidden = true
+  $('input').removeAttribute('aria-activedescendant')
+}
+
+/** Puts the feature's file paths in place of the "@word". */
+function pickMention(feature) {
+  const input = $('input')
+  input.setRangeText(`${mentionText(feature)} `, mention.start, input.selectionStart, 'end')
+  closeMention()
+  input.focus()
+}
+
+/** While the popup shows, the arrow keys, Enter, Tab and Escape act on it. Returns true when it used the key. */
+function mentionKey(event) {
+  if (!mention || event.isComposing) return false
+  const count = mention.items.length
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    mention.active = (mention.active + (event.key === 'ArrowDown' ? 1 : count - 1)) % count
+    renderMention()
+  } else if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'Tab') pickMention(mention.items[mention.active])
+  else if (event.key === 'Escape') closeMention()
+  else return false
+  event.preventDefault()
+  return true
 }
 
 async function reloadActiveTab() {
@@ -625,10 +686,17 @@ $('form').addEventListener('submit', (event) => {
   else send()
 })
 $('input').addEventListener('keydown', (event) => {
+  if (mentionKey(event)) return
   if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return
   event.preventDefault()
   send()
 })
+$('input').addEventListener('input', updateMention)
+$('input').addEventListener('click', updateMention)
+$('input').addEventListener('keyup', (event) => {
+  if (/^(ArrowLeft|ArrowRight|Home|End)$/.test(event.key)) updateMention()
+})
+$('input').addEventListener('blur', closeMention)
 $('undo').addEventListener('click', () => {
   if (!port) connect()
   port?.postMessage({ type: 'undo' })

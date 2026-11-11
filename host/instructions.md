@@ -62,6 +62,8 @@ A feature is `features/<id>.css`, `features/<id>.js`, or both. `<id>` uses lower
 
 Before you add a feature, look in `features/` for one that does the same thing on the same site. Edit that one.
 
+When the user writes a path such as `@features/github-dark.css`, they mean that feature. Read its files first.
+
 ## Scope
 
 Choose `@match` from the user's words:

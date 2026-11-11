@@ -462,11 +462,54 @@ button.icon {
 }
 
 form {
+  position: relative;
   border-top: 1px solid var(--line);
   padding: 8px 12px 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* The "@" feature search, above the chat box. */
+.mentions {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: 12px;
+  right: 12px;
+  z-index: 10;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+
+.mention {
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mention:hover,
+.mention[aria-selected='true'] {
+  background: var(--user);
+}
+
+.mention-name {
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mention-meta {
+  color: var(--muted);
+  font-size: 11px;
+  word-break: break-all;
 }
 
 .target {
